@@ -7,6 +7,7 @@ library(bartMachine)
 library(pec)
 library(JM)
 library(ggplot2)
+library(glmnet)
 set_bart_machine_num_cores(2)
 
 
@@ -315,8 +316,7 @@ cross_validated_performance = function(LMpoints, horizon, k=2){
       if(prior_update)
         return(priors)
       
-      else
-        cox = fit_cox(LMdata_train = LMdata[-fold,])
+      cox = fit_cox(LMdata_train = LMdata[-fold,])
       nonzero.coef = cox[[2]]
       cox          = cox[[1]]
       
@@ -360,10 +360,10 @@ cross_validated_performance = function(LMpoints, horizon, k=2){
 
 fit_cox = function(LMdata_train){
   
-  glmnet.cv <- cv.glmnet(as.matrix(subset(LMdata_train,select=-c(Survival,Status))),
+  glmnet.cv <- glmnet(as.matrix(subset(LMdata_train,select=-c(Survival,Status))),
                          Surv(LMdata_train$Survival,LMdata_train$Status),family="cox")
-  glmnet.obj <- glmnet.cv$glmnet.fit
-  optimal.lambda <- glmnet.cv$lambda.min    # For a more parsimoneous
+  glmnet.obj <- glmnet.cv
+  optimal.lambda <- min(glmnet.cv$lambda)
   lambda.index <- which(glmnet.obj$lambda==optimal.lambda) 
   # take beta for optimal lambda 
   optimal.beta  <- glmnet.obj$beta[,lambda.index] 
